@@ -18,21 +18,21 @@ export default function About() {
 
   const team = [
     {
-      name: 'Emmanuel Sahr Dauda',
+      name: 'Ibrahim Bassie Turay',
       role: 'Lead Developer',
-      image: '/api/placeholder/300/300',  // Replace with actual image path
+      image: '/ibrahim.jpeg',
       bio: 'Full-stack developer with expertise in React and Node.js',
     },
     {
       name: 'Isaac Christian Kamara',
       role: 'Backend Developer',
-      image: '/api/placeholder/300/300',  // Replace with actual image path
+      image: '/issac.jpeg',  
       bio: 'Database expert specializing in MongoDB and API development',
     },
     {
       name: 'Mohamed Saidu Bassie Turay',
       role: 'Frontend Developer',
-      image: '/api/placeholder/300/300',  // Replace with actual image path
+      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtuphMb4mq-EcVWhMVT8FCkv5dqZGgvn_QiA&s',  
       bio: 'UI/UX specialist with a passion for creating beautiful user experiences',
     },
   ];

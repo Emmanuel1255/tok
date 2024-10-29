@@ -33,21 +33,47 @@ const getInitialSession = () => {
 const loginAPI = async (credentials) => {
   // Simulate network request
   await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  if (credentials.email === 'test@example.com' && credentials.password === 'Password123!') {
+
+  // Define additional test accounts
+  const testAccounts = [
+    {
+      email: 'ibrahim@tok.com',
+      password: 'Password!'
+    },
+    {
+      email: 'isaac@tok.com',
+      password: 'Password!'
+    },
+    {
+      email: 'mohamed@tok.com',
+      password: 'Password!'
+    },
+    {
+      email: 'admin@tok.com',
+      password: 'Password!'
+    }
+  ];
+
+  // Check if the provided credentials match any of the test accounts
+  const matchingAccount = testAccounts.find(
+    account => account.email === credentials.email && account.password === credentials.password
+  );
+
+  if (matchingAccount) {
     // Create session expiry 24 hours from now
     const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    
+
     return {
       user: {
-        id: 1,
-        email: credentials.email,
-        name: 'Test User',
+        id: matchingAccount.email.split('@')[0], // Use email username as user ID
+        email: matchingAccount.email,
+        name: matchingAccount.email.split('@')[0] // Use email username as name
       },
       token: 'fake-jwt-token',
       sessionExpiry
     };
   }
+
   throw new Error('Invalid email or password');
 };
 
