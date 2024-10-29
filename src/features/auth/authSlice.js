@@ -37,7 +37,7 @@ const loginAPI = async (credentials) => {
   // Define additional test accounts
   const testAccounts = [
     {
-      email: 'ibrahim@tok.com',
+      email: 'emmanuel@tok.com',
       password: 'Password!'
     },
     {
