@@ -1,7 +1,7 @@
-// src/pages/Register.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import axios from 'axios';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 
@@ -24,16 +24,32 @@ export default function Register() {
       setIsLoading(true);
       setError('');
       
-      // TODO: Implement actual registration API call here
-      console.log('Registration data:', data);
+      // Send registration data to the backend
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/register`,
+        data,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          withCredentials: true, // For cookie handling if needed
+        }
+      );
+
+      // Assuming the response contains token, user, and session expiry
+      const { token, user, sessionExpiry } = response.data;
+
+      // Save session data to localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('sessionExpiry', sessionExpiry || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
+
+      console.log('Registration successful:', response.data);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // On success, redirect to login
-      navigate('/login');
+      // On success, redirect to interest selection page
+      navigate('/interests');
     } catch (err) {
-      setError(err.message || 'Failed to register. Please try again.');
+      setError(err.response?.data?.message || 'Failed to register. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +102,7 @@ export default function Register() {
                 required: 'Username is required',
                 pattern: {
                   value: /^[a-zA-Z0-9_-]+$/,
-                  message: 'Username can only contain letters, numbers, underscores and hyphens',
+                  message: 'Username can only contain letters, numbers, underscores, and hyphens',
                 },
               })}
               error={errors.username?.message}
@@ -116,7 +132,7 @@ export default function Register() {
                 },
                 pattern: {
                   value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                  message: 'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character',
+                  message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
                 },
               })}
               error={errors.password?.message}

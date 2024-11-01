@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Dialog } from '@headlessui/react';
-import { 
-  Bars3Icon, 
-  XMarkIcon, 
+import {
+  Bars3Icon,
+  XMarkIcon,
   UserCircleIcon,
-  ArrowRightOnRectangleIcon 
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
-import { logout } from '../../features/auth/authSlice';
+import { logout, selectAuth } from '../../features/auth/authSlice';
 
 const publicNavigation = [
   { name: 'Home', href: '/' },
@@ -25,7 +25,8 @@ const privateNavigation = [
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dispatch = useDispatch();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { user, isAuthenticated } = useSelector(selectAuth);
+  // console.log("USer", user);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -69,11 +70,11 @@ export default function Navbar() {
               <>
                 <div className="flex items-center gap-x-4">
                   <Link
-                    to="/dashboard"
+                    to={`/profile/${user?.username}`}
                     className="flex items-center gap-2 text-sm font-semibold text-gray-900 hover:text-primary-600"
                   >
                     <UserCircleIcon className="h-5 w-5" />
-                    {user?.name || 'My Account'}
+                    {user?.username || 'My Account'}
                   </Link>
                   <button
                     onClick={handleLogout}

@@ -29,52 +29,27 @@ const getInitialSession = () => {
   };
 };
 
-// Simulated login API call
 const loginAPI = async (credentials) => {
-  // Simulate network request
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  // Define additional test accounts
-  const testAccounts = [
-    {
-      email: 'emmanuel@tok.com',
-      password: 'Password!'
-    },
-    {
-      email: 'isaac@tok.com',
-      password: 'Password!'
-    },
-    {
-      email: 'mohamed@tok.com',
-      password: 'Password!'
-    },
-    {
-      email: 'admin@tok.com',
-      password: 'Password!'
-    }
-  ];
-
-  // Check if the provided credentials match any of the test accounts
-  const matchingAccount = testAccounts.find(
-    account => account.email === credentials.email && account.password === credentials.password
-  );
-
-  if (matchingAccount) {
-    // Create session expiry 24 hours from now
-    const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-
-    return {
-      user: {
-        id: matchingAccount.email.split('@')[0], // Use email username as user ID
-        email: matchingAccount.email,
-        name: matchingAccount.email.split('@')[0] // Use email username as name
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      token: 'fake-jwt-token',
-      sessionExpiry
-    };
-  }
+      body: JSON.stringify(credentials),
+      credentials: 'include', // Add this for cookies
+    });
 
-  throw new Error('Invalid email or password');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Login failed');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw new Error(error.message || 'Login failed');
+  }
 };
 
 export const login = createAsyncThunk(
@@ -85,7 +60,7 @@ export const login = createAsyncThunk(
     // Store session data in localStorage
     localStorage.setItem('token', response.token);
     localStorage.setItem('user', JSON.stringify(response.user));
-    localStorage.setItem('sessionExpiry', response.sessionExpiry);
+    localStorage.setItem('sessionExpiry', response.sessionExpiry || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
     
     return response;
   }
@@ -102,7 +77,6 @@ export const logout = createAsyncThunk(
   }
 );
 
-// Check session validity
 export const checkSession = createAsyncThunk(
   'auth/checkSession',
   async (_, { dispatch }) => {
@@ -128,6 +102,18 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    setUser: (state, action) => {
+      state.user = action.payload;
+      localStorage.setItem('user', JSON.stringify(action.payload));
+    },
+    setToken: (state, action) => {
+      state.token = action.payload;
+      if (action.payload) {
+        localStorage.setItem('token', action.payload);
+      } else {
+        localStorage.removeItem('token');
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -142,10 +128,12 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.sessionExpiry = action.payload.sessionExpiry;
         state.isAuthenticated = true;
+        state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
         state.status = 'idle';
         state.error = action.error.message;
+        state.isAuthenticated = false;
       })
       // Logout cases
       .addCase(logout.fulfilled, (state) => {
@@ -153,6 +141,7 @@ const authSlice = createSlice({
         state.token = null;
         state.sessionExpiry = null;
         state.isAuthenticated = false;
+        state.error = null;
       })
       // Check session cases
       .addCase(checkSession.fulfilled, (state, action) => {
@@ -170,5 +159,11 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, setUser, setToken } = authSlice.actions;
 export default authSlice.reducer;
+
+export const selectAuth = (state) => state.auth;
+export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
+export const selectUser = (state) => state.auth.user;
+export const selectAuthError = (state) => state.auth.error;
+export const selectAuthStatus = (state) => state.auth.status;

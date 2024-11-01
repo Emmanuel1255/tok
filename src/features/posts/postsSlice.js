@@ -1,18 +1,22 @@
 // src/features/posts/postsSlice.js
 import { createSlice } from '@reduxjs/toolkit';
-import { demoBlogs } from '../../data/blogPosts';
-
-const ITEMS_PER_PAGE = 6;
+import { fetchPosts, createPost, updatePost, deletePost } from './postsActions';
 
 const initialState = {
-  posts: demoBlogs,
+  posts: [],
   status: 'idle',
   error: null,
   currentPage: 1,
-  totalPages: Math.ceil(demoBlogs.length / ITEMS_PER_PAGE),
+  totalPages: 0,
+  totalPosts: 0,
   selectedCategory: 'all',
   selectedTags: [],
-  searchTerm: ''
+  searchTerm: '',
+  filters: {
+    category: null,
+    tags: [],
+    search: ''
+  }
 };
 
 const postsSlice = createSlice({
@@ -24,52 +28,102 @@ const postsSlice = createSlice({
     },
     setSelectedCategory: (state, action) => {
       state.selectedCategory = action.payload;
+      state.filters.category = action.payload === 'all' ? null : action.payload;
       state.currentPage = 1;
     },
     setSelectedTags: (state, action) => {
       state.selectedTags = action.payload;
+      state.filters.tags = action.payload;
       state.currentPage = 1;
     },
     setSearchTerm: (state, action) => {
       state.searchTerm = action.payload;
+      state.filters.search = action.payload;
       state.currentPage = 1;
     },
-    filterPosts: (state) => {
-      let filtered = [...demoBlogs];
-      
-      // Apply category filter
-      if (state.selectedCategory !== 'all') {
-        filtered = filtered.filter(post => 
-          post.category.name.toLowerCase() === state.selectedCategory.toLowerCase()
-        );
-      }
-
-      // Apply tag filter
-      if (state.selectedTags.length > 0) {
-        filtered = filtered.filter(post =>
-          state.selectedTags.every(tag => 
-            post.tags.includes(tag)
-          )
-        );
-      }
-
-      // Apply search filter
-      if (state.searchTerm) {
-        const searchLower = state.searchTerm.toLowerCase();
-        filtered = filtered.filter(post =>
-          post.title.toLowerCase().includes(searchLower) ||
-          post.excerpt.toLowerCase().includes(searchLower)
-        );
-      }
-
-      // Update posts and pagination
-      const startIndex = (state.currentPage - 1) * ITEMS_PER_PAGE;
-      const endIndex = startIndex + ITEMS_PER_PAGE;
-      
-      state.posts = filtered.slice(startIndex, endIndex);
-      state.totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+    clearFilters: (state) => {
+      state.selectedCategory = 'all';
+      state.selectedTags = [];
+      state.searchTerm = '';
+      state.filters = {
+        category: null,
+        tags: [],
+        search: ''
+      };
+      state.currentPage = 1;
+    },
+    resetStatus: (state) => {
+      state.status = 'idle';
+      state.error = null;
     }
-  }
+  },
+  extraReducers: (builder) => {
+    builder
+      // Fetch posts cases
+      .addCase(fetchPosts.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(fetchPosts.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.posts = action.payload.data;
+        state.totalPages = action.payload.totalPages;
+        state.currentPage = action.payload.currentPage;
+        state.totalPosts = action.payload.totalPosts;
+        state.error = null;
+      })
+      .addCase(fetchPosts.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      // Create post cases
+      .addCase(createPost.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(createPost.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.posts.unshift(action.payload);
+        state.totalPosts += 1;
+        state.error = null;
+      })
+      .addCase(createPost.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      // Update post cases
+      .addCase(updatePost.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(updatePost.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        const index = state.posts.findIndex(post => post.id === action.payload.id);
+        if (index !== -1) {
+          state.posts[index] = action.payload;
+        }
+        state.error = null;
+      })
+      .addCase(updatePost.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      // Delete post cases
+      .addCase(deletePost.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(deletePost.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.posts = state.posts.filter(post => post.id !== action.payload);
+        state.totalPosts -= 1;
+        state.error = null;
+      })
+      .addCase(deletePost.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      });
+  },
 });
 
 export const {
@@ -77,8 +131,17 @@ export const {
   setSelectedCategory,
   setSelectedTags,
   setSearchTerm,
-  filterPosts
+  clearFilters,
+  resetStatus
 } = postsSlice.actions;
 
-export default postsSlice.reducer;
+// Selectors
+export const selectAllPosts = (state) => state.posts.posts;
+export const selectPostsStatus = (state) => state.posts.status;
+export const selectPostsError = (state) => state.posts.error;
+export const selectCurrentPage = (state) => state.posts.currentPage;
+export const selectTotalPages = (state) => state.posts.totalPages;
+export const selectTotalPosts = (state) => state.posts.totalPosts;
+export const selectFilters = (state) => state.posts.filters;
 
+export default postsSlice.reducer;
