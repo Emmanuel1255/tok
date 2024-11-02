@@ -28,6 +28,7 @@ export default function Navbar() {
   const { user, isAuthenticated } = useSelector(selectAuth);
   // console.log("USer", user);
 
+
   const handleLogout = () => {
     dispatch(logout());
     setMobileMenuOpen(false);

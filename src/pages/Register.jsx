@@ -1,57 +1,65 @@
-import { useState } from 'react';
+// src/pages/Register.jsx
+import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { register as registerUser, clearError, selectAuth } from '../features/auth/authSlice';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 
 export default function Register() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { status, error, isAuthenticated } = useSelector(selectAuth);
   
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm();
+    setError: setFormError,
+  } = useForm({
+    mode: 'onChange',
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      terms: false
+    }
+  });
 
   const password = watch('password');
 
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/interests');
+    }
+  }, [isAuthenticated, navigate]);
+
   const onSubmit = async (data) => {
     try {
-      setIsLoading(true);
-      setError('');
+      // Clear any existing errors
+      dispatch(clearError());
       
-      // Send registration data to the backend
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/auth/register`,
-        data,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          withCredentials: true, // For cookie handling if needed
-        }
-      );
-
-      // Assuming the response contains token, user, and session expiry
-      const { token, user, sessionExpiry } = response.data;
-
-      // Save session data to localStorage
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('sessionExpiry', sessionExpiry || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
-
-      console.log('Registration successful:', response.data);
+      const response = await dispatch(registerUser(data)).unwrap();
+      console.log('Registration successful:', response);
       
-      // On success, redirect to interest selection page
-      navigate('/interests');
+      // Navigation will be handled by the isAuthenticated useEffect
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to register. Please try again.');
-    } finally {
-      setIsLoading(false);
+      console.error('Registration failed:', err);
+      setFormError('root', { 
+        type: 'manual',
+        message: err.message || 'Failed to register. Please try again.'
+      });
     }
   };
 
@@ -63,7 +71,11 @@ export default function Register() {
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
+          <Link 
+            to="/login" 
+            className="font-medium text-primary-600 hover:text-primary-500"
+            tabIndex={status === 'loading' ? -1 : 0}
+          >
             Sign in
           </Link>
         </p>
@@ -71,13 +83,14 @@ export default function Register() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {error && (
+          {/* Show either Redux error or form error */}
+          {(error || errors.root) && (
             <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
-              {error}
+              {error || errors.root?.message}
             </div>
           )}
           
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <Input
                 label="First name"
@@ -85,6 +98,7 @@ export default function Register() {
                   required: 'First name is required',
                 })}
                 error={errors.firstName?.message}
+                disabled={status === 'loading'}
               />
 
               <Input
@@ -93,6 +107,7 @@ export default function Register() {
                   required: 'Last name is required',
                 })}
                 error={errors.lastName?.message}
+                disabled={status === 'loading'}
               />
             </div>
 
@@ -104,8 +119,13 @@ export default function Register() {
                   value: /^[a-zA-Z0-9_-]+$/,
                   message: 'Username can only contain letters, numbers, underscores, and hyphens',
                 },
+                minLength: {
+                  value: 3,
+                  message: 'Username must be at least 3 characters long',
+                },
               })}
               error={errors.username?.message}
+              disabled={status === 'loading'}
             />
 
             <Input
@@ -119,6 +139,7 @@ export default function Register() {
                 },
               })}
               error={errors.email?.message}
+              disabled={status === 'loading'}
             />
 
             <Input
@@ -136,6 +157,7 @@ export default function Register() {
                 },
               })}
               error={errors.password?.message}
+              disabled={status === 'loading'}
             />
 
             <Input
@@ -143,9 +165,11 @@ export default function Register() {
               type="password"
               {...register('confirmPassword', {
                 required: 'Please confirm your password',
-                validate: value => value === password || 'Passwords do not match',
+                validate: value => 
+                  value === password || 'Passwords do not match',
               })}
               error={errors.confirmPassword?.message}
+              disabled={status === 'loading'}
             />
 
             <div className="flex items-center">
@@ -156,10 +180,15 @@ export default function Register() {
                 {...register('terms', {
                   required: 'You must accept the terms and conditions',
                 })}
+                disabled={status === 'loading'}
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
                 I agree to the{' '}
-                <Link to="/terms" className="font-medium text-primary-600 hover:text-primary-500">
+                <Link 
+                  to="/terms" 
+                  className="font-medium text-primary-600 hover:text-primary-500"
+                  tabIndex={status === 'loading' ? -1 : 0}
+                >
                   Terms and Conditions
                 </Link>
               </label>
@@ -171,11 +200,52 @@ export default function Register() {
             <Button
               type="submit"
               className="w-full"
-              isLoading={isLoading}
+              isLoading={status === 'loading'}
+              disabled={status === 'loading'}
             >
-              Create account
+              {status === 'loading' ? 'Creating account...' : 'Create account'}
             </Button>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => {/* TODO: Implement Google OAuth */}}
+                disabled={status === 'loading'}
+              >
+                <img
+                  className="mr-2 h-5 w-5"
+                  src="https://www.svgrepo.com/show/475656/google-color.svg"
+                  alt="Google logo"
+                />
+                Google
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => {/* TODO: Implement GitHub OAuth */}}
+                disabled={status === 'loading'}
+              >
+                <img
+                  className="mr-2 h-5 w-5"
+                  src="https://www.svgrepo.com/show/512317/github-142.svg"
+                  alt="GitHub logo"
+                />
+                GitHub
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

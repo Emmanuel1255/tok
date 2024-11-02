@@ -66,6 +66,44 @@ export const login = createAsyncThunk(
   }
 );
 
+const registerAPI = async (userData) => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Registration failed');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw new Error(error.message || 'Registration failed');
+  }
+};
+
+export const register = createAsyncThunk(
+  'auth/register',
+  async (userData) => {
+    const response = await registerAPI(userData);
+    
+    // Store session data in localStorage
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('user', JSON.stringify(response.user));
+    localStorage.setItem('sessionExpiry', response.sessionExpiry || 
+      new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
+    
+    return response;
+  }
+);
+
 export const logout = createAsyncThunk(
   'auth/logout',
   async () => {
@@ -117,6 +155,24 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+    // Register cases
+    .addCase(register.pending, (state) => {
+      state.status = 'loading';
+      state.error = null;
+    })
+    .addCase(register.fulfilled, (state, action) => {
+      state.status = 'idle';
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.sessionExpiry = action.payload.sessionExpiry;
+      state.isAuthenticated = true;
+      state.error = null;
+    })
+    .addCase(register.rejected, (state, action) => {
+      state.status = 'idle';
+      state.error = action.error.message;
+      state.isAuthenticated = false;
+    })
       // Login cases
       .addCase(login.pending, (state) => {
         state.status = 'loading';

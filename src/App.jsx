@@ -18,6 +18,7 @@ import About from './pages/About';
 import InterestSelection from './pages/InterestSelection';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
+import BlogCategory from './pages/BlogCategory';
 
 export default function App() {
   const dispatch = useDispatch();
@@ -85,6 +86,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/blog/category/:category" element={<BlogCategory />} />
       </Route>
     </Routes>
   );

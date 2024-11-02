@@ -1,5 +1,5 @@
 // src/pages/BlogPost.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
@@ -9,15 +9,132 @@ import {
   HeartIcon,
   ChatBubbleLeftIcon,
   PencilSquareIcon,
-  ShareIcon
+  ShareIcon,
+  ClipboardIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
+import {
+  FacebookShareButton,
+  TwitterShareButton,
+  WhatsappShareButton,
+  FacebookIcon,
+  TwitterIcon,
+  WhatsappIcon
+} from 'react-share';
 
 // Helper function to get image URL
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   if (imagePath.startsWith('http')) return imagePath;
   return `${import.meta.env.VITE_API_BASE_URL_IMG}${imagePath}`;
+};
+
+const ShareMenu = ({ url, title }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (copied) {
+      const timer = setTimeout(() => setCopied(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copied]);
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center text-gray-500 hover:text-primary-600"
+      >
+        <ShareIcon className="h-6 w-6" />
+        <span className="ml-2">Share</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+          <div className="py-1" role="menu">
+            <WhatsappShareButton
+              url={url}
+              title={title}
+              className="w-full"
+              onClick={() => setIsOpen(false)}
+            >
+              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <WhatsappIcon size={24} round className="mr-2" />
+                Share on WhatsApp
+              </button>
+            </WhatsappShareButton>
+
+            <TwitterShareButton
+              url={url}
+              title={title}
+              className="w-full"
+              onClick={() => setIsOpen(false)}
+            >
+              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <TwitterIcon size={24} round className="mr-2" />
+                Share on X
+              </button>
+            </TwitterShareButton>
+
+            <FacebookShareButton
+              url={url}
+              quote={title}
+              className="w-full"
+              onClick={() => setIsOpen(false)}
+            >
+              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <FacebookIcon size={24} round className="mr-2" />
+                Share on Facebook
+              </button>
+            </FacebookShareButton>
+
+            <button
+              onClick={() => {
+                handleCopyLink();
+                setTimeout(() => setIsOpen(false), 1500);
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              {copied ? (
+                <>
+                  <CheckIcon className="h-6 w-6 mr-2 text-green-500" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <ClipboardIcon className="h-6 w-6 mr-2" />
+                  Copy link
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default function BlogPost() {
@@ -42,7 +159,6 @@ export default function BlogPost() {
         });
 
         const fetchedPost = response.data.data;
-        // console.log(fetchedPost);
         setPost(fetchedPost);
         setIsLiked(fetchedPost.likes?.includes(user?.id));
         setIsLoading(false);
@@ -221,15 +337,10 @@ export default function BlogPost() {
               <span className="ml-2">{post.comments?.length || 0}</span>
             </div>
 
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-              }}
-              className="flex items-center text-gray-500 hover:text-primary-600"
-            >
-              <ShareIcon className="h-6 w-6" />
-              <span className="ml-2">Share</span>
-            </button>
+            <ShareMenu
+              url={window.location.href}
+              title={post.title}
+            />
           </div>
         </div>
 

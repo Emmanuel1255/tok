@@ -72,7 +72,7 @@ export default function InterestSelection() {
       await api.post('/users/interests', { interests: interestsArray });
   
       // Navigate to the dashboard after successful save
-      navigate('/dashboard');
+      navigate('/blog');
     } catch (error) {
       setError('Failed to save interests. Please try again.');
       console.error('Failed to save interests:', error);
