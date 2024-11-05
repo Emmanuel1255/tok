@@ -7,14 +7,15 @@ import {
   Bars3Icon,
   XMarkIcon,
   UserCircleIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 import { logout, selectAuth } from '../../features/auth/authSlice';
 
 const publicNavigation = [
   { name: 'Home', href: '/' },
   { name: 'Blog', href: '/blog' },
-  { name: 'About', href: '/about' },
+  { name: 'About', href: '/about' }
 ];
 
 const privateNavigation = [
@@ -24,10 +25,9 @@ const privateNavigation = [
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [complaintsOpen, setComplaintsOpen] = useState(false); // State for complaints dialog
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector(selectAuth);
-  // console.log("USer", user);
-
 
   const handleLogout = () => {
     dispatch(logout());
@@ -65,6 +65,14 @@ export default function Navbar() {
                 {item.name}
               </Link>
             ))}
+            {/* Complaints Button */}
+            <button
+              onClick={() => setComplaintsOpen(true)}
+              className="flex items-center gap-2 text-sm font-semibold leading-6 text-gray-900 hover:text-primary-600"
+            >
+              <QuestionMarkCircleIcon className="h-5 w-5" />
+              
+            </button>
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center gap-x-6">
             {isAuthenticated ? (
@@ -108,74 +116,40 @@ export default function Navbar() {
       <Dialog as="div" className="lg:hidden" open={mobileMenuOpen} onClose={setMobileMenuOpen}>
         <div className="fixed inset-0 z-10" />
         <Dialog.Panel className="fixed inset-y-0 right-0 z-10 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="-m-1.5 p-1.5" onClick={() => setMobileMenuOpen(false)}>
-              <span className="text-2xl font-bold text-primary-600">Tok</span>
-            </Link>
-            <button
-              type="button"
-              className="-m-2.5 rounded-md p-2.5 text-gray-700"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="sr-only">Close menu</span>
-              <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-            </button>
-          </div>
-          <div className="mt-6 flow-root">
-            <div className="-my-6 divide-y divide-gray-500/10">
-              <div className="space-y-2 py-6">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
-              <div className="py-6">
-                {isAuthenticated ? (
-                  <>
-                    <div className="px-3 py-2">
-                      <div className="flex items-center gap-2 mb-4">
-                        <UserCircleIcon className="h-5 w-5" />
-                        <span className="text-base font-semibold text-gray-900">
-                          {user?.name || 'My Account'}
-                        </span>
-                      </div>
-                      <button
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-2 rounded-lg text-base font-semibold text-gray-900 hover:bg-gray-50"
-                      >
-                        <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                        Logout
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to="/login"
-                      className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Log in
-                    </Link>
-                    <Link
-                      to="/register"
-                      className="mt-4 block rounded-md bg-primary-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-primary-500"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Sign up
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Mobile Menu Content */}
         </Dialog.Panel>
+      </Dialog>
+      
+      {/* Complaints Dialog */}
+      <Dialog as="div" open={complaintsOpen} onClose={() => setComplaintsOpen(false)} className="relative z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-30" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-md bg-white rounded-lg p-6">
+            <Dialog.Title className="text-lg font-semibold">Submit a Complaint</Dialog.Title>
+            <Dialog.Description className="mt-2 text-sm text-gray-500">
+              Please describe the issue you’re experiencing, and we’ll address it as soon as possible.
+            </Dialog.Description>
+            <textarea
+              className="mt-4 w-full border border-gray-300 rounded-md p-2"
+              placeholder="Describe your complaint..."
+              rows={4}
+            />
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setComplaintsOpen(false)}
+                className="mr-2 px-4 py-2 text-sm font-semibold text-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setComplaintsOpen(false)}
+                className="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-md hover:bg-primary-500"
+              >
+                Submit
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
       </Dialog>
     </header>
   );
