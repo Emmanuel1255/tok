@@ -26,6 +26,11 @@ export default function Comment({
   const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useSelector((state) => state.auth);
   
+  const getImageUrlAvatar = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    return `${import.meta.env.VITE_API_BASE_URL_IMG}/uploads/avatars/${imagePath}`;
+  };
   
   const isAuthor = user?.id === comment.user._id;
   
@@ -57,7 +62,7 @@ export default function Comment({
     <div className={`flex space-x-4 ${className} ${isDeleting ? 'opacity-50' : ''}`}>
       <div className="flex-shrink-0">
         <img
-          src={getImageUrl(comment.user.avatar) || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emmanuel'}
+          src={getImageUrlAvatar(comment.user.avatar) || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emmanuel'}
           alt={`${comment.user.firstName} ${comment.user.lastName}`}
           className="h-10 w-10 rounded-full object-cover"
           onError={(e) => {

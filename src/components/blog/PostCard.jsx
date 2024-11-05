@@ -55,6 +55,9 @@ export default function PostCard({ post }) {
       );
 
       
+      
+
+      
 
       if (response.data.success) {
         const newLikeStatus = !isLiked;
@@ -105,6 +108,12 @@ export default function PostCard({ post }) {
     }
   };
 
+  const getImageUrlAvatar = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    return `${import.meta.env.VITE_API_BASE_URL_IMG}/uploads/avatars/${imagePath}`;
+  };
+
   return (
     <article className="flex flex-col">
       {/* Post Image */}
@@ -152,7 +161,7 @@ export default function PostCard({ post }) {
         {/* Author Info */}
         <div className="mt-6 flex items-center gap-x-4">
           <img
-            src={getImageUrl(post.author.avatar)}
+            src={getImageUrlAvatar(post.author.avatar)}
             alt={`${post.author.firstName} ${post.author.lastName}`}
             className="h-10 w-10 rounded-full bg-gray-100 object-cover"
             onError={(e) => {

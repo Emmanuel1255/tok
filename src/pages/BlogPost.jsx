@@ -31,6 +31,12 @@ const getImageUrl = (imagePath) => {
   return `${import.meta.env.VITE_API_BASE_URL_IMG}${imagePath}`;
 };
 
+const getImageUrlAvatar = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http')) return imagePath;
+  return `${import.meta.env.VITE_API_BASE_URL_IMG}/uploads/avatars/${imagePath}`;
+};
+
 const ShareMenu = ({ url, title }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -308,7 +314,7 @@ export default function BlogPost() {
         {post.featuredImage && (
           <div className="mb-8">
             <img
-              src={getImageUrl(post.featuredImage)}
+              src={getImageUrl(post.featuredImage) || 'https://copysmiths.com/wp-content/uploads/2022/05/feature-image-maintain-a-successful-blog.jpg'}
               alt={post.title}
               className="w-full h-auto rounded-lg object-cover max-h-96"
               onError={(e) => {
@@ -323,13 +329,10 @@ export default function BlogPost() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <img
-              src={getImageUrl(post.author.avatar) || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emmanuel'}
+              src={getImageUrlAvatar(post.author.avatar) || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emmanuel'}
               alt={post.author.name}
               className="h-12 w-12 rounded-full object-cover"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emmanuel';
-              }}
+              
             />
             <div>
               <h3 className="text-sm font-medium text-gray-900">
