@@ -1,6 +1,14 @@
 // src/features/posts/postsSlice.js
 import { createSlice } from '@reduxjs/toolkit';
-import { fetchPosts, createPost, updatePost, deletePost } from './postsActions';
+import { fetchPosts,
+  likePost,
+  addComment,
+  editComment,
+  deleteComment,
+  createPost,
+  updatePost,
+  deletePost,
+  fetchPostById } from './postsActions';
 
 const initialState = {
   posts: [],
@@ -59,6 +67,85 @@ const postsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Handle addComment
+      .addCase(addComment.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(addComment.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        const { postId, comment } = action.payload;
+        
+        // Update comments in posts list
+        const post = state.posts.find(p => p._id === postId);
+        if (post) {
+          post.comments.unshift(comment);
+        }
+        
+        // Update comments in current post if viewing single post
+        if (state.currentPost?._id === postId) {
+          state.currentPost.comments.unshift(comment);
+        }
+      })
+      .addCase(addComment.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+
+      // Handle editComment
+      .addCase(editComment.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(editComment.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        const { postId, commentId, updatedComment } = action.payload;
+        
+        // Update comment in posts list
+        const post = state.posts.find(p => p._id === postId);
+        if (post) {
+          const commentIndex = post.comments.findIndex(c => c._id === commentId);
+          if (commentIndex !== -1) {
+            post.comments[commentIndex] = updatedComment;
+          }
+        }
+        
+        // Update comment in current post if viewing single post
+        if (state.currentPost?._id === postId) {
+          const commentIndex = state.currentPost.comments.findIndex(c => c._id === commentId);
+          if (commentIndex !== -1) {
+            state.currentPost.comments[commentIndex] = updatedComment;
+          }
+        }
+      })
+      .addCase(editComment.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+
+      // Handle deleteComment
+      .addCase(deleteComment.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(deleteComment.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        const { postId, commentId } = action.payload;
+        
+        // Remove comment from posts list
+        const post = state.posts.find(p => p._id === postId);
+        if (post) {
+          post.comments = post.comments.filter(c => c._id !== commentId);
+        }
+        
+        // Remove comment from current post if viewing single post
+        if (state.currentPost?._id === postId) {
+          state.currentPost.comments = state.currentPost.comments.filter(
+            c => c._id !== commentId
+          );
+        }
+      })
+      .addCase(deleteComment.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
       // Fetch posts cases
       .addCase(fetchPosts.pending, (state) => {
         state.status = 'loading';

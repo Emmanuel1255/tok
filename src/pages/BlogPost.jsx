@@ -3,8 +3,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
-import { 
-  CalendarIcon, 
+import {
+  CalendarIcon,
   UserCircleIcon,
   HeartIcon,
   ChatBubbleLeftIcon,
@@ -22,6 +22,7 @@ import {
   TwitterIcon,
   WhatsappIcon
 } from 'react-share';
+import Comment from '../components/Comment';
 
 // Helper function to get image URL
 const getImageUrl = (imagePath) => {
@@ -61,6 +62,8 @@ const ShareMenu = ({ url, title }) => {
       console.error('Failed to copy:', err);
     }
   };
+
+  
 
   return (
     <div className="relative" ref={menuRef}>
@@ -172,6 +175,61 @@ export default function BlogPost() {
     fetchPost();
   }, [id, user?.id]);
 
+  const handleEditComment = async (postId, commentId, content) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}/posts/${postId}/comments/${commentId}`,
+        { content },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setPost(prev => ({
+        ...prev,
+        comments: prev.comments.map(comment =>
+          comment._id === commentId
+            ? { ...comment, content, updatedAt: new Date().toISOString() }
+            : comment
+        )
+      }));
+
+      // toast.success('Comment updated successfully');
+    } catch (err) {
+      console.error('Failed to edit comment:', err);
+      // toast.error('Failed to update comment');
+      throw err; // Re-throw to be handled by the Comment component
+    }
+  };
+
+  const handleDeleteComment = async (postId, commentId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(
+        `${import.meta.env.VITE_API_BASE_URL}/posts/${postId}/comments/${commentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setPost(prev => ({
+        ...prev,
+        comments: prev.comments.filter(comment => comment._id !== commentId)
+      }));
+
+      // toast.success('Comment deleted successfully');
+    } catch (err) {
+      console.error('Failed to delete comment:', err);
+      // toast.error('Failed to delete comment');
+      throw err; // Re-throw to be handled by the Comment component
+    }
+  };
+
   const handleLike = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -187,7 +245,7 @@ export default function BlogPost() {
       setIsLiked(!isLiked);
       setPost(prev => ({
         ...prev,
-        likes: isLiked 
+        likes: isLiked
           ? prev.likes.filter(likeId => likeId !== user?.id)
           : [...prev.likes, user?.id]
       }));
@@ -298,7 +356,7 @@ export default function BlogPost() {
         <h1 className="text-4xl font-bold text-gray-900 mb-6">{post.title}</h1>
 
         {/* Content */}
-        <div 
+        <div
           className="prose max-w-none mb-8"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
@@ -320,9 +378,8 @@ export default function BlogPost() {
           <div className="flex items-center space-x-6">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 text-sm ${
-                isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
-              }`}
+              className={`flex items-center gap-2 text-sm ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                }`}
             >
               {isLiked ? (
                 <HeartIconSolid className="h-6 w-6" />
@@ -379,30 +436,13 @@ export default function BlogPost() {
 
           <div className="space-y-6">
             {post.comments?.map((comment) => (
-              <div key={comment._id} className="flex space-x-4">
-                <div className="flex-shrink-0">
-                  <img
-                    src={getImageUrl(comment.user.avatar) || '/default-avatar.jpg'}
-                    alt={`${comment.user.firstName} ${comment.user.lastName}`}
-                    className="h-10 w-10 rounded-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emmanuel';
-                    }}
-                  />
-                </div>
-                <div className="flex-grow">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-900">
-                      {`${comment.user.firstName} ${comment.user.lastName}`}
-                    </h3>
-                    <time className="text-sm text-gray-500">
-                      {new Date(comment.createdAt).toLocaleDateString()}
-                    </time>
-                  </div>
-                  <p className="mt-1 text-sm text-gray-700">{comment.content}</p>
-                </div>
-              </div>
+              <Comment
+                key={comment._id}
+                comment={comment}
+                postId={post._id}
+                onEdit={handleEditComment}
+                onDelete={handleDeleteComment}
+              />
             ))}
           </div>
         </section>

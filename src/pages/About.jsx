@@ -1,12 +1,14 @@
 // src/pages/About.jsx
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircleIcon } from '@heroicons/react/20/solid';
+import axios from 'axios';
 
 export default function About() {
   const features = [
     'Unlimited blog posts',
     'Rich text editor',
-    'Image and video uploads',
+    'Image uploads',
     'Custom domains',
     'SEO optimization',
     'Analytics dashboard',
@@ -32,17 +34,35 @@ export default function About() {
     {
       name: 'Mohamed Saidu Bassie Turay',
       role: 'Frontend Developer',
-      image: 'Mohamed.jpeg', 
+      image: 'Mohamed.jpeg',
       bio: 'UI/UX specialist with a passion for creating beautiful user experiences',
     },
   ];
 
-  const stats = [
-    { label: 'Active users', value: '10K+' },
-    { label: 'Blog posts published', value: '50K+' },
-    { label: 'Countries reached', value: '150+' },
-    { label: 'Uptime', value: '99.9%' },
-  ];
+  const [stats, setStats] = useState([
+    { label: 'Active users', value: '...' },
+    { label: 'Blog posts published', value: '...' },
+    { label: 'Countries reached', value: '...' },
+    { label: 'Uptime', value: '...' },
+  ]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await axios.get('/api/stats');
+        setStats(response.data.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+        setError('Failed to load statistics');
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
     <div className="bg-white">
@@ -76,20 +96,7 @@ export default function About() {
       </div>
 
       {/* Stats section */}
-      <div className="bg-white py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <dl className="grid grid-cols-1 gap-x-8 gap-y-16 text-center lg:grid-cols-4">
-            {stats.map((stat) => (
-              <div key={stat.label} className="mx-auto flex max-w-xs flex-col gap-y-4">
-                <dt className="text-base leading-7 text-gray-600">{stat.label}</dt>
-                <dd className="order-first text-3xl font-semibold tracking-tight text-gray-900 sm:text-5xl">
-                  {stat.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </div>
+      
 
       {/* Features section */}
       <div className="bg-gray-50 py-24 sm:py-32">

@@ -19,6 +19,7 @@ import InterestSelection from './pages/InterestSelection';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
 import BlogCategory from './pages/BlogCategory';
+import Contact from './pages/Contact';
 
 export default function App() {
   const dispatch = useDispatch();
@@ -87,6 +88,7 @@ export default function App() {
           }
         />
         <Route path="/blog/category/:category" element={<BlogCategory />} />
+        <Route path="contact" element={<Contact />} />
       </Route>
     </Routes>
   );

@@ -254,7 +254,7 @@ export default function NewBlogPost() {
                   maxLength={200}
                 />
                 <p className="mt-2 text-sm text-gray-500">
-                  {title.length}/200 characters
+                  {/* {title.length}/200 characters */}
                 </p>
               </div>
 
@@ -405,7 +405,7 @@ export default function NewBlogPost() {
                   maxLength={500}
                 />
                 <p className="mt-2 text-sm text-gray-500">
-                  {excerpt.length}/500 characters
+                  {/* {excerpt.length}/500 characters */}
                 </p>
               </div>
             </div>
@@ -466,7 +466,7 @@ export default function NewBlogPost() {
               </li>
               <li>Featured image is optional (max 1MB)</li>
               <li>Maximum 5 tags allowed</li>
-              <li>Excerpt is optional (max 500 characters)</li>
+              {/* <li>Excerpt is optional (max 500 characters)</li> */}
             </ul>
           </div>
 

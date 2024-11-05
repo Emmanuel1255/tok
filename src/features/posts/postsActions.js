@@ -98,6 +98,39 @@ export const addComment = createAsyncThunk(
   }
 );
 
+export const editComment = createAsyncThunk(
+  'posts/editComment',
+  async ({ postId, commentId, content }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/posts/${postId}/comments/${commentId}`, { content });
+      return {
+        postId,
+        commentId,
+        updatedComment: response.data.data
+      };
+    } catch (error) {
+      console.error('Edit comment error:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to edit comment');
+    }
+  }
+);
+
+export const deleteComment = createAsyncThunk(
+  'posts/deleteComment',
+  async ({ postId, commentId }, { rejectWithValue }) => {
+    try {
+      await api.delete(`/posts/${postId}/comments/${commentId}`);
+      return {
+        postId,
+        commentId
+      };
+    } catch (error) {
+      console.error('Delete comment error:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete comment');
+    }
+  }
+);
+
 export const createPost = createAsyncThunk(
   'posts/createPost',
   async (postData, { rejectWithValue }) => {
