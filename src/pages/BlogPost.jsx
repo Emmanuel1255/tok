@@ -1,7 +1,7 @@
-// src/pages/BlogPost.jsx
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useTheme } from '../context/ThemeContext';
 import axios from 'axios';
 import {
   CalendarIcon,
@@ -41,6 +41,7 @@ const ShareMenu = ({ url, title }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const menuRef = useRef(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -69,20 +70,18 @@ const ShareMenu = ({ url, title }) => {
     }
   };
 
-  
-
   return (
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center text-gray-500 hover:text-primary-600"
+        className="flex items-center text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
       >
         <ShareIcon className="h-6 w-6" />
         <span className="ml-2">Share</span>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
           <div className="py-1" role="menu">
             <WhatsappShareButton
               url={url}
@@ -90,7 +89,7 @@ const ShareMenu = ({ url, title }) => {
               className="w-full"
               onClick={() => setIsOpen(false)}
             >
-              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <WhatsappIcon size={24} round className="mr-2" />
                 Share on WhatsApp
               </button>
@@ -102,7 +101,7 @@ const ShareMenu = ({ url, title }) => {
               className="w-full"
               onClick={() => setIsOpen(false)}
             >
-              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <TwitterIcon size={24} round className="mr-2" />
                 Share on X
               </button>
@@ -114,7 +113,7 @@ const ShareMenu = ({ url, title }) => {
               className="w-full"
               onClick={() => setIsOpen(false)}
             >
-              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <FacebookIcon size={24} round className="mr-2" />
                 Share on Facebook
               </button>
@@ -125,7 +124,7 @@ const ShareMenu = ({ url, title }) => {
                 handleCopyLink();
                 setTimeout(() => setIsOpen(false), 1500);
               }}
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               {copied ? (
                 <>
@@ -149,13 +148,13 @@ const ShareMenu = ({ url, title }) => {
 export default function BlogPost() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
   const [post, setPost] = useState(null);
   const [isLiked, setIsLiked] = useState(false);
   const [comment, setComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -202,12 +201,9 @@ export default function BlogPost() {
             : comment
         )
       }));
-
-      // toast.success('Comment updated successfully');
     } catch (err) {
       console.error('Failed to edit comment:', err);
-      // toast.error('Failed to update comment');
-      throw err; // Re-throw to be handled by the Comment component
+      throw err;
     }
   };
 
@@ -227,12 +223,9 @@ export default function BlogPost() {
         ...prev,
         comments: prev.comments.filter(comment => comment._id !== commentId)
       }));
-
-      // toast.success('Comment deleted successfully');
     } catch (err) {
       console.error('Failed to delete comment:', err);
-      // toast.error('Failed to delete comment');
-      throw err; // Re-throw to be handled by the Comment component
+      throw err;
     }
   };
 
@@ -288,19 +281,19 @@ export default function BlogPost() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      <div className="flex justify-center items-center min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 dark:border-primary-400"></div>
       </div>
     );
   }
 
   if (error || !post) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
           {error || 'Post not found'}
         </h2>
-        <Link to="/blog" className="text-primary-600 hover:text-primary-500">
+        <Link to="/blog" className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300">
           Back to blog
         </Link>
       </div>
@@ -308,13 +301,13 @@ export default function BlogPost() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 py-8 transition-colors duration-200">
       <article className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         {/* Featured Image */}
         {post.featuredImage && (
           <div className="mb-8">
             <img
-              src={getImageUrl(post.featuredImage) || 'https://copysmiths.com/wp-content/uploads/2022/05/feature-image-maintain-a-successful-blog.jpg'}
+              src={getImageUrl(post.featuredImage)}
               alt={post.title}
               className="w-full h-auto rounded-lg object-cover max-h-96"
               onError={(e) => {
@@ -329,16 +322,15 @@ export default function BlogPost() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <img
-              src={getImageUrlAvatar(post.author.avatar) || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emmanuel'}
+              src={getImageUrlAvatar(post.author.avatar)}
               alt={post.author.name}
               className="h-12 w-12 rounded-full object-cover"
-              
             />
             <div>
-              <h3 className="text-sm font-medium text-gray-900">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {`${post.author.firstName} ${post.author.lastName}`}
               </h3>
-              <div className="flex items-center text-sm text-gray-500">
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <CalendarIcon className="h-4 w-4 mr-1" />
                 {new Date(post.updatedAt).toLocaleDateString()}
               </div>
@@ -347,7 +339,7 @@ export default function BlogPost() {
           {user?.id === post.author._id && (
             <Link
               to={`/blog/edit/${post._id}`}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <PencilSquareIcon className="h-4 w-4 mr-2" />
               Edit Post
@@ -356,20 +348,22 @@ export default function BlogPost() {
         </div>
 
         {/* Title */}
-        <h1 className="text-4xl font-bold text-gray-900 mb-6">{post.title}</h1>
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-6">{post.title}</h1>
 
         {/* Content */}
-        <div
-          className="prose max-w-none mb-8"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
+        <div className="prose-container dark:text-gray-100">
+          <div
+            className="prose prose-lg dark:prose-invert max-w-none mb-8"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+        </div>
 
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-8">
           {post.tags.map(tag => (
             <span
               key={tag}
-              className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-primary-100 text-primary-800"
+              className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200"
             >
               {tag}
             </span>
@@ -377,11 +371,11 @@ export default function BlogPost() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between border-t border-b border-gray-200 py-4 mb-8">
+        <div className="flex items-center justify-between border-t border-b border-gray-200 dark:border-gray-700 py-4 mb-8">
           <div className="flex items-center space-x-6">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 text-sm ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+              className={`flex items-center gap-2 text-sm ${isLiked ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
                 }`}
             >
               {isLiked ? (
@@ -392,7 +386,7 @@ export default function BlogPost() {
               <span>{post.likes?.length || 0}</span>
             </button>
 
-            <div className="flex items-center text-gray-500">
+            <div className="flex items-center text-gray-500 dark:text-gray-400">
               <ChatBubbleLeftIcon className="h-6 w-6" />
               <span className="ml-2">{post.comments?.length || 0}</span>
             </div>
@@ -406,30 +400,30 @@ export default function BlogPost() {
 
         {/* Comments Section */}
         <section className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Comments</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Comments</h2>
           {user ? (
             <form onSubmit={handleComment} className="mb-8">
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={3}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                className="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 transition-colors duration-200"
                 placeholder="Add a comment..."
               />
               <div className="mt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 transition-colors duration-200"
                 >
                   Post Comment
                 </button>
               </div>
             </form>
           ) : (
-            <div className="text-center py-4 bg-gray-50 rounded-md mb-8">
-              <p className="text-gray-600">
+            <div className="text-center py-4 bg-gray-50 dark:bg-gray-800 rounded-md mb-8 transition-colors duration-200">
+              <p className="text-gray-600 dark:text-gray-400">
                 Please{' '}
-                <Link to="/login" className="text-primary-600 hover:text-primary-500">
+                <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300">
                   log in
                 </Link>
                 {' '}to comment.
@@ -447,6 +441,12 @@ export default function BlogPost() {
                 onDelete={handleDeleteComment}
               />
             ))}
+
+            {post.comments?.length === 0 && (
+              <p className="text-center text-gray-500 dark:text-gray-400">
+                No comments yet. Be the first to comment!
+              </p>
+            )}
           </div>
         </section>
       </article>

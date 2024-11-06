@@ -1,4 +1,3 @@
-// src/pages/BlogCategory.jsx
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,7 +19,7 @@ import Button from '../components/common/Button';
 const POSTS_PER_PAGE = 6;
 
 export default function BlogCategory() {
-  const { category } = useParams(); // Get category from URL
+  const { category } = useParams();
   const dispatch = useDispatch();
   const posts = useSelector(selectAllPosts);
   const status = useSelector(selectPostsStatus);
@@ -31,65 +30,58 @@ export default function BlogCategory() {
   
   const [searchInput, setSearchInput] = useState(search || '');
 
-  // Format category for display (e.g., "programming" -> "Programming")
   const categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
 
-  // Reset filters when component unmounts
   useEffect(() => {
     return () => {
       dispatch(clearFilters());
     };
   }, [dispatch]);
 
-  // Fetch posts with category filter
   useEffect(() => {
     dispatch(fetchPosts({
       page: currentPage,
       limit: POSTS_PER_PAGE,
-      category: categoryTitle, // Pass the properly formatted category
+      category: categoryTitle,
       search
     }));
   }, [dispatch, currentPage, categoryTitle, search]);
 
-  // Debounced search handler
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchInput !== search) {
         dispatch(setSearchTerm(searchInput));
-        dispatch(setCurrentPage(1)); // Reset to first page on new search
+        dispatch(setCurrentPage(1));
       }
     }, 500);
 
     return () => clearTimeout(timer);
   }, [searchInput, dispatch, search]);
 
-  // Handle page change
   const handlePageChange = (newPage) => {
     dispatch(setCurrentPage(newPage));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Loading state
   if (status === 'loading' && !posts.length) {
     return (
-      <div className="min-h-screen bg-white py-24 sm:py-32">
+      <div className="min-h-screen bg-white dark:bg-gray-900 py-24 sm:py-32 transition-colors duration-200">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex justify-center items-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600 dark:border-primary-400"></div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (status === 'failed') {
     return (
-      <div className="min-h-screen bg-white py-24 sm:py-32">
+      <div className="min-h-screen bg-white dark:bg-gray-900 py-24 sm:py-32 transition-colors duration-200">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900">Error Loading Posts</h2>
-            <p className="mt-2 text-gray-600">{error}</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Error Loading Posts</h2>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">{error}</p>
             <Button 
               onClick={() => dispatch(fetchPosts({
                 page: 1,
@@ -107,27 +99,25 @@ export default function BlogCategory() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-24 sm:py-32">
+    <div className="min-h-screen bg-white dark:bg-gray-900 py-24 sm:py-32 transition-colors duration-200">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        {/* Header */}
         <div className="mx-auto max-w-2xl text-center">
           <div className="flex items-center justify-center gap-2 mb-6">
             <Link 
               to="/blog"
-              className="text-sm text-primary-600 hover:text-primary-500"
+              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300"
             >
               ← Back to all posts
             </Link>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
             {categoryTitle} Posts
           </h1>
-          <p className="mt-2 text-lg leading-8 text-gray-600">
+          <p className="mt-2 text-lg leading-8 text-gray-600 dark:text-gray-400">
             Browse our collection of {categoryTitle.toLowerCase()} articles
           </p>
         </div>
 
-        {/* Search */}
         <div className="mt-8 flex justify-center">
           <div className="relative w-full max-w-md">
             <input
@@ -135,7 +125,7 @@ export default function BlogCategory() {
               placeholder={`Search ${categoryTitle.toLowerCase()} posts...`}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 transition-colors duration-200"
             />
             {searchInput && (
               <button
@@ -143,7 +133,7 @@ export default function BlogCategory() {
                   setSearchInput('');
                   dispatch(setSearchTerm(''));
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
               >
                 ×
               </button>
@@ -151,23 +141,22 @@ export default function BlogCategory() {
           </div>
         </div>
 
-        {/* Posts Grid */}
         {status === 'loading' ? (
           <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(POSTS_PER_PAGE)].map((_, index) => (
-              <div key={index} className="animate-pulse bg-gray-100 rounded-lg h-96" />
+              <div key={index} className="animate-pulse bg-gray-100 dark:bg-gray-800 rounded-lg h-96" />
             ))}
           </div>
         ) : posts.length === 0 ? (
           <div className="text-center mt-16">
-            <p className="text-gray-600">No posts found in this category.</p>
+            <p className="text-gray-600 dark:text-gray-400">No posts found in this category.</p>
             {search && (
               <button
                 onClick={() => {
                   setSearchInput('');
                   dispatch(setSearchTerm(''));
                 }}
-                className="mt-4 text-primary-600 hover:text-primary-500"
+                className="mt-4 text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300"
               >
                 Clear search
               </button>
@@ -181,7 +170,6 @@ export default function BlogCategory() {
           </div>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="mt-8 flex justify-center gap-2">
             <Button

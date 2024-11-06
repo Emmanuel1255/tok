@@ -1,5 +1,5 @@
 // src/components/blog/PostCard.jsx
-import { useState, useEffect } from 'react';  // Add useEffect
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
@@ -7,6 +7,7 @@ import { HeartIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { getImageUrl } from '../../utils/imageUtils';
 import { stripHtmlAndLimitWords } from '../../utils/textHelpers';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function PostCard({ post }) {
   const navigate = useNavigate();
@@ -115,14 +116,14 @@ export default function PostCard({ post }) {
   };
 
   return (
-    <article className="flex flex-col">
+    <article className="flex flex-col transition-colors duration-200">
       {/* Post Image */}
       {post.featuredImage && (
         <Link to={`/blog/${post._id}`} className="relative w-full">
           <img
             src={getImageUrl(post.featuredImage) || 'https://www.webnode.com/blog/wp-content/uploads/2019/04/blog2.png'}
             alt={post.title}
-            className="aspect-[16/9] w-full rounded-2xl bg-gray-100 object-cover sm:aspect-[2/1] lg:aspect-[3/2]"
+            className="aspect-[16/9] w-full rounded-2xl bg-gray-100 dark:bg-gray-800 object-cover sm:aspect-[2/1] lg:aspect-[3/2]"
             onError={(e) => {
               e.target.src = 'https://www.webnode.com/blog/wp-content/uploads/2019/04/blog2.png';
               e.target.onerror = null;
@@ -134,12 +135,12 @@ export default function PostCard({ post }) {
       {/* Post Meta */}
       <div className="max-w-xl">
         <div className="mt-8 flex items-center gap-x-4 text-xs">
-          <time className="text-gray-500">
+          <time className="text-gray-500 dark:text-gray-400">
             {new Date(post.updatedAt).toLocaleDateString()}
           </time>
           <Link
             to={`/blog/category/${post.category.slug}`}
-            className="relative z-10 rounded-full bg-gray-50 px-3 py-1.5 font-medium text-gray-600 hover:bg-gray-100"
+            className="relative z-10 rounded-full bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
           >
             {post.category.name}
           </Link>
@@ -147,13 +148,13 @@ export default function PostCard({ post }) {
 
         {/* Post Title and Excerpt */}
         <div className="group relative">
-          <h3 className="mt-3 text-lg font-semibold leading-6 text-gray-900 group-hover:text-gray-600">
+          <h3 className="mt-3 text-lg font-semibold leading-6 text-gray-900 dark:text-gray-100 group-hover:text-gray-600 dark:group-hover:text-gray-300">
             <Link to={`/blog/${post._id}`}>
               <span className="absolute inset-0" />
               {post.title}
             </Link>
           </h3>
-          <p className="mt-5 line-clamp-3 text-sm leading-6 text-gray-600">
+          <p className="mt-5 line-clamp-3 text-sm leading-6 text-gray-600 dark:text-gray-400">
             {stripHtmlAndLimitWords(post.excerpt)}
           </p>
         </div>
@@ -163,37 +164,39 @@ export default function PostCard({ post }) {
           <img
             src={getImageUrlAvatar(post.author.avatar)}
             alt={`${post.author.firstName} ${post.author.lastName}`}
-            className="h-10 w-10 rounded-full bg-gray-100 object-cover"
+            className="h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-800 object-cover"
             onError={(e) => {
               e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emmanuel';
               e.target.onerror = null;
             }}
           />
           <div className="text-sm">
-            <p className="font-semibold text-gray-900">
+            <p className="font-semibold text-gray-900 dark:text-gray-100">
               <Link to={`/profile/${post.author.username}`}>
                 {`${post.author.firstName} ${post.author.lastName}`}
               </Link>
             </p>
-            <p className="text-gray-600">{post.author.role || 'Member'}</p>
+            <p className="text-gray-600 dark:text-gray-400">{post.author.role || 'Member'}</p>
           </div>
         </div>
 
         {/* Interactions */}
-        <div className="mt-6 flex items-center gap-x-6 border-t pt-4">
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-2 text-sm ${
-            isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
-          }`}
-        >
-          {isLiked ? (
-            <HeartIconSolid className="h-5 w-5" />
-          ) : (
-            <HeartIcon className="h-5 w-5" />
-          )}
-          <span>{likesCount}</span>
-        </button>
+        <div className="mt-6 flex items-center gap-x-6 border-t dark:border-gray-700 pt-4">
+          <button
+            onClick={handleLike}
+            className={`flex items-center gap-2 text-sm ${
+              isLiked 
+                ? 'text-red-500 dark:text-red-400' 
+                : 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
+            }`}
+          >
+            {isLiked ? (
+              <HeartIconSolid className="h-5 w-5" />
+            ) : (
+              <HeartIcon className="h-5 w-5" />
+            )}
+            <span>{likesCount}</span>
+          </button>
 
           <button
             onClick={() => {
@@ -203,7 +206,7 @@ export default function PostCard({ post }) {
               }
               setShowCommentInput(!showCommentInput);
             }}
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary-500"
+            className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400"
           >
             <ChatBubbleLeftIcon className="h-5 w-5" />
             <span>{commentsCount}</span>
@@ -217,7 +220,7 @@ export default function PostCard({ post }) {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Write a comment..."
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
+              className="w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 text-sm transition-colors duration-200"
               rows={3}
               disabled={isSubmitting}
             />
@@ -225,14 +228,14 @@ export default function PostCard({ post }) {
               <button
                 type="button"
                 onClick={() => setShowCommentInput(false)}
-                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900"
+                className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                 disabled={isSubmitting}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="rounded-md bg-primary-600 px-3 py-1 text-sm text-white hover:bg-primary-500 disabled:opacity-50"
+                className="rounded-md bg-primary-600 dark:bg-primary-500 px-3 py-1 text-sm text-white hover:bg-primary-500 dark:hover:bg-primary-400 disabled:opacity-50 transition-colors duration-200"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Posting...' : 'Comment'}

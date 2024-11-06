@@ -1,17 +1,19 @@
-// src/pages/Register.jsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { register as registerUser, clearError, selectAuth } from '../features/auth/authSlice';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export default function Register() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { status, error, isAuthenticated } = useSelector(selectAuth);
-  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -47,15 +49,9 @@ export default function Register() {
 
   const onSubmit = async (data) => {
     try {
-      // Clear any existing errors
       dispatch(clearError());
-      
-      const response = await dispatch(registerUser(data)).unwrap();
-      console.log('Registration successful:', response);
-      
-      // Navigation will be handled by the isAuthenticated useEffect
+      await dispatch(registerUser(data)).unwrap();
     } catch (err) {
-      console.error('Registration failed:', err);
       setFormError('root', { 
         type: 'manual',
         message: err.message || 'Failed to register. Please try again.'
@@ -64,16 +60,16 @@ export default function Register() {
   };
 
   return (
-    <div className="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8 bg-white dark:bg-gray-900 transition-colors duration-200">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
           Create your account
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
           <Link 
             to="/login" 
-            className="font-medium text-primary-600 hover:text-primary-500"
+            className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300"
             tabIndex={status === 'loading' ? -1 : 0}
           >
             Sign in
@@ -82,10 +78,9 @@ export default function Register() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {/* Show either Redux error or form error */}
+        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10 transition-colors duration-200">
           {(error || errors.root) && (
-            <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-md">
               {error || errors.root?.message}
             </div>
           )}
@@ -99,6 +94,7 @@ export default function Register() {
                 })}
                 error={errors.firstName?.message}
                 disabled={status === 'loading'}
+                className="dark:bg-gray-700 dark:text-white"
               />
 
               <Input
@@ -108,6 +104,7 @@ export default function Register() {
                 })}
                 error={errors.lastName?.message}
                 disabled={status === 'loading'}
+                className="dark:bg-gray-700 dark:text-white"
               />
             </div>
 
@@ -126,6 +123,7 @@ export default function Register() {
               })}
               error={errors.username?.message}
               disabled={status === 'loading'}
+              className="dark:bg-gray-700 dark:text-white"
             />
 
             <Input
@@ -140,53 +138,76 @@ export default function Register() {
               })}
               error={errors.email?.message}
               disabled={status === 'loading'}
+              className="dark:bg-gray-700 dark:text-white"
             />
 
-            <Input
-              label="Password"
-              type="password"
-              {...register('password', {
-                required: 'Password is required',
-                minLength: {
-                  value: 8,
-                  message: 'Password must be at least 8 characters',
-                },
-                pattern: {
-                  value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                  message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
-                },
-              })}
-              error={errors.password?.message}
-              disabled={status === 'loading'}
-            />
+            <div className="relative">
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                {...register('password', {
+                  required: 'Password is required',
+                  minLength: {
+                    value: 8,
+                    message: 'Password must be at least 8 characters',
+                  },
+                  pattern: {
+                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+                    message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+                  },
+                })}
+                error={errors.password?.message}
+                disabled={status === 'loading'}
+                className="dark:bg-gray-700 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-300"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+              </button>
+            </div>
 
-            <Input
-              label="Confirm password"
-              type="password"
-              {...register('confirmPassword', {
-                required: 'Please confirm your password',
-                validate: value => 
-                  value === password || 'Passwords do not match',
-              })}
-              error={errors.confirmPassword?.message}
-              disabled={status === 'loading'}
-            />
+            <div className="relative">
+              <Input
+                label="Confirm password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                {...register('confirmPassword', {
+                  required: 'Please confirm your password',
+                  validate: value => 
+                    value === password || 'Passwords do not match',
+                })}
+                error={errors.confirmPassword?.message}
+                disabled={status === 'loading'}
+                className="dark:bg-gray-700 dark:text-white"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-300"
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+              </button>
+            </div>
 
             <div className="flex items-center">
               <input
                 id="terms"
                 type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600"
+                className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 dark:bg-gray-700 focus:ring-primary-500"
                 {...register('terms', {
                   required: 'You must accept the terms and conditions',
                 })}
                 disabled={status === 'loading'}
               />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
+              <label htmlFor="terms" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
                 I agree to the{' '}
                 <Link 
                   to="/terms" 
-                  className="font-medium text-primary-600 hover:text-primary-500"
+                  className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300"
                   tabIndex={status === 'loading' ? -1 : 0}
                 >
                   Terms and Conditions
@@ -206,46 +227,6 @@ export default function Register() {
               {status === 'loading' ? 'Creating account...' : 'Create account'}
             </Button>
           </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">Or continue with</span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => {/* TODO: Implement Google OAuth */}}
-                disabled={status === 'loading'}
-              >
-                <img
-                  className="mr-2 h-5 w-5"
-                  src="https://www.svgrepo.com/show/475656/google-color.svg"
-                  alt="Google logo"
-                />
-                Google
-              </Button>
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => {/* TODO: Implement GitHub OAuth */}}
-                disabled={status === 'loading'}
-              >
-                <img
-                  className="mr-2 h-5 w-5"
-                  src="https://www.svgrepo.com/show/512317/github-142.svg"
-                  alt="GitHub logo"
-                />
-                GitHub
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

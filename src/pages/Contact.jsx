@@ -1,4 +1,3 @@
-// src/pages/Contact.jsx
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSelector } from 'react-redux';
@@ -50,16 +49,13 @@ export default function Contact() {
     try {
       setIsSubmitting(true);
       
-      // TODO: Implement actual API call to send message
       console.log('Sending message:', data);
       
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setSubmitSuccess(true);
       reset();
       
-      // Reset success message after 5 seconds
       setTimeout(() => {
         setSubmitSuccess(false);
       }, 5000);
@@ -72,40 +68,40 @@ export default function Contact() {
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-white dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
-      <div className="relative bg-primary-800">
+      <div className="relative bg-primary-800 dark:bg-primary-700 transition-colors duration-200">
         <div className="absolute inset-0">
-          <div className="absolute inset-y-0 left-0 w-1/2 bg-gray-50" />
+          <div className="absolute inset-y-0 left-0 w-1/2 bg-gray-50 dark:bg-gray-800" />
         </div>
         <div className="relative mx-auto max-w-7xl lg:grid lg:grid-cols-2">
-          <div className="bg-gray-50 px-6 py-16 lg:px-8 lg:py-24">
+          <div className="bg-gray-50 dark:bg-gray-800 px-6 py-16 lg:px-8 lg:py-24">
             <div className="mx-auto max-w-lg">
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-3xl">
                 Get in touch
               </h1>
-              <p className="mt-3 text-lg leading-6 text-gray-500">
+              <p className="mt-3 text-lg leading-6 text-gray-500 dark:text-gray-400">
                 We'd love to hear from you! Send us a message using the form or contact us using the information below.
               </p>
               <dl className="mt-8 space-y-6">
                 {CONTACT_METHODS.map((method) => (
                   <div key={method.name} className="flex">
                     <div className="flex-shrink-0">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600 dark:bg-primary-500">
                         <method.icon className="h-6 w-6 text-white" aria-hidden="true" />
                       </div>
                     </div>
                     <div className="ml-3">
-                      <dt className="text-base font-medium text-gray-900">{method.name}</dt>
-                      <dd className="mt-1 text-sm text-gray-500">
+                      <dt className="text-base font-medium text-gray-900 dark:text-gray-100">{method.name}</dt>
+                      <dd className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         <p>{method.description}</p>
                         {method.email && (
-                          <a href={`mailto:${method.email}`} className="hover:text-primary-600">
+                          <a href={`mailto:${method.email}`} className="hover:text-primary-600 dark:hover:text-primary-400">
                             {method.email}
                           </a>
                         )}
                         {method.phone && (
-                          <a href={`tel:${method.phone}`} className="hover:text-primary-600">
+                          <a href={`tel:${method.phone}`} className="hover:text-primary-600 dark:hover:text-primary-400">
                             {method.phone}
                           </a>
                         )}
@@ -119,15 +115,15 @@ export default function Contact() {
               </dl>
             </div>
           </div>
-          <div className="bg-primary-800 px-6 py-16 lg:px-8 lg:py-24">
+          <div className="bg-primary-800 dark:bg-primary-700 px-6 py-16 lg:px-8 lg:py-24 transition-colors duration-200">
             <div className="mx-auto max-w-lg lg:mr-0 lg:ml-auto">
-              <div className="relative bg-white shadow-xl rounded-lg">
+              <div className="relative bg-white dark:bg-gray-800 shadow-xl rounded-lg transition-colors duration-200">
                 <h2 className="sr-only">Contact form</h2>
 
                 <div className="px-6 py-10">
                   {submitSuccess && (
-                    <div className="mb-6 rounded-md bg-green-50 p-4">
-                      <div className="text-sm text-green-700">
+                    <div className="mb-6 rounded-md bg-green-50 dark:bg-green-900 p-4">
+                      <div className="text-sm text-green-700 dark:text-green-400">
                         Message sent successfully! We'll get back to you soon.
                       </div>
                     </div>
@@ -140,6 +136,7 @@ export default function Contact() {
                         required: 'Name is required'
                       })}
                       error={errors.name?.message}
+                      className="dark:bg-gray-800 dark:text-gray-100"
                     />
 
                     <Input
@@ -153,6 +150,7 @@ export default function Contact() {
                         }
                       })}
                       error={errors.email?.message}
+                      className="dark:bg-gray-800 dark:text-gray-100"
                     />
 
                     <Input
@@ -161,10 +159,11 @@ export default function Contact() {
                         required: 'Subject is required'
                       })}
                       error={errors.subject?.message}
+                      className="dark:bg-gray-800 dark:text-gray-100"
                     />
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-900">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">
                         Message
                       </label>
                       <textarea
@@ -176,14 +175,14 @@ export default function Contact() {
                           }
                         })}
                         rows={4}
-                        className={`mt-1 block w-full rounded-md shadow-sm
+                        className={`mt-1 block w-full rounded-md shadow-sm dark:bg-gray-800 dark:text-gray-100
                           ${errors.message
-                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                            : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500'
+                            : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600'
                           }`}
                       />
                       {errors.message && (
-                        <p className="mt-2 text-sm text-red-600">
+                        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
                           {errors.message.message}
                         </p>
                       )}
@@ -191,7 +190,7 @@ export default function Contact() {
 
                     <Button
                       type="submit"
-                      className="w-full"
+                      className="w-full dark:bg-primary-600 dark:hover:bg-primary-500 dark:text-white"
                       isLoading={isSubmitting}
                     >
                       Send message
