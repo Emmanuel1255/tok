@@ -3,19 +3,20 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { login, clearError } from '../features/auth/authSlice';
+import { login, clearError, selectAuth } from '../features/auth/authSlice';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 
 export default function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { status, error, isAuthenticated } = useSelector((state) => state.auth);
+  const { status, error, isAuthenticated } = useSelector(selectAuth);
   
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting },
+    setError: setFormError
   } = useForm({
     mode: 'onChange',
     defaultValues: {
@@ -25,6 +26,12 @@ export default function Login() {
     }
   });
 
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
+
+  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
@@ -33,9 +40,27 @@ export default function Login() {
 
   const onSubmit = async (data) => {
     try {
-      await dispatch(login(data)).unwrap();
+      // Clear any existing errors
+      dispatch(clearError());
+      
+      const response = await dispatch(login(data)).unwrap();
+      
+      // If remember me is not checked, we could handle that here
+      if (!data.remember) {
+        // Could implement session-only storage instead of persistent
+        // This would be handled in your backend
+      }
+
+      console.log('Login successful:', response);
     } catch (err) {
       console.error('Login failed:', err);
+      // Set form-level error if it's a general error
+      if (err.message) {
+        setFormError('root', { 
+          type: 'manual',
+          message: err.message 
+        });
+      }
     }
   };
 
@@ -55,10 +80,13 @@ export default function Login() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {error && (
+          {/* Show either Redux error or form error */}
+          {(error || errors.root) && (
             <div className="mb-4 rounded-md bg-red-50 p-4">
               <div className="flex">
-                <div className="text-sm text-red-700">{error}</div>
+                <div className="text-sm text-red-700">
+                  {error || errors.root?.message}
+                </div>
               </div>
             </div>
           )}
@@ -77,6 +105,7 @@ export default function Login() {
                 type="email"
                 autoComplete="email"
                 error={errors.email?.message}
+                disabled={status === 'loading'}
               />
             </div>
 
@@ -93,6 +122,7 @@ export default function Login() {
                 type="password"
                 autoComplete="current-password"
                 error={errors.password?.message}
+                disabled={status === 'loading'}
               />
             </div>
 
@@ -103,6 +133,7 @@ export default function Login() {
                   id="remember"
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  disabled={status === 'loading'}
                 />
                 <label htmlFor="remember" className="ml-2 block text-sm text-gray-900">
                   Remember me
@@ -110,7 +141,11 @@ export default function Login() {
               </div>
 
               <div className="text-sm">
-                <Link to="/forgot-password" className="font-medium text-primary-600 hover:text-primary-500">
+                <Link 
+                  to="/forgot-password" 
+                  className="font-medium text-primary-600 hover:text-primary-500"
+                  tabIndex={status === 'loading' ? -1 : 0}
+                >
                   Forgot your password?
                 </Link>
               </div>
@@ -120,8 +155,9 @@ export default function Login() {
               type="submit"
               className="w-full"
               isLoading={status === 'loading' || isSubmitting}
+              disabled={status === 'loading'}
             >
-              Sign in
+              {status === 'loading' ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
 
@@ -140,6 +176,7 @@ export default function Login() {
                 variant="secondary"
                 className="w-full"
                 onClick={() => {/* TODO: Implement Google OAuth */}}
+                disabled={status === 'loading'}
               >
                 <img
                   className="mr-2 h-5 w-5"
@@ -152,6 +189,7 @@ export default function Login() {
                 variant="secondary"
                 className="w-full"
                 onClick={() => {/* TODO: Implement GitHub OAuth */}}
+                disabled={status === 'loading'}
               >
                 <img
                   className="mr-2 h-5 w-5"

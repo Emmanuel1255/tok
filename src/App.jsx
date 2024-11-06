@@ -1,5 +1,8 @@
 // src/App.jsx
+import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setUser, setToken } from './features/auth/authSlice';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
@@ -12,9 +15,25 @@ import EditBlogPost from './pages/EditBlogPost';
 import MyPosts from './pages/MyPosts';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
-
+import InterestSelection from './pages/InterestSelection';
+import Profile from './pages/Profile';
+import EditProfile from './pages/EditProfile';
+import BlogCategory from './pages/BlogCategory';
+import Contact from './pages/Contact';
 
 export default function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('token');
+
+    if (user && token) {
+      dispatch(setUser(user));
+      dispatch(setToken(token));
+    }
+  }, [dispatch]);
+
   return (
     <Routes>
       <Route path="/" element={<MainLayout />}>
@@ -58,6 +77,18 @@ export default function App() {
           }
         />
         <Route path="about" element={<About />} />
+        <Route path="interests" element={<InterestSelection />} />
+        <Route path="profile/:username" element={<Profile />} />
+        <Route
+          path="edit-profile/:username"
+          element={
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/blog/category/:category" element={<BlogCategory />} />
+        <Route path="contact" element={<Contact />} />
       </Route>
     </Routes>
   );

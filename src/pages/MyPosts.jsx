@@ -1,67 +1,94 @@
- // src/pages/MyPosts.jsx
-import { useState } from 'react';
+// src/pages/MyPosts.jsx
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  PencilIcon, 
-  TrashIcon, 
+import axios from 'axios';
+import {
+  PencilIcon,
+  TrashIcon,
   EyeIcon,
   PlusIcon,
   FunnelIcon,
-  MagnifyingGlassIcon 
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { useSelector } from 'react-redux';
-
-// Mock data - replace with actual API data
-const mockPosts = [
-  {
-    id: 1,
-    title: 'Getting Started with React and Tailwind',
-    excerpt: 'Learn how to set up a new project with React and Tailwind CSS...',
-    createdAt: '2024-03-15',
-    status: 'published',
-    views: 234,
-    comments: 12,
-    likes: 45
-  },
-  {
-    id: 2,
-    title: 'Building a Blog Platform',
-    excerpt: 'Step by step guide to creating your own blogging platform...',
-    createdAt: '2024-03-14',
-    status: 'draft',
-    views: 0,
-    comments: 0,
-    likes: 0
-  },
-  // Add more mock posts as needed
-];
+import { stripHtmlAndLimitWords } from '../utils/textHelpers';
 
 const STATUSES = ['all', 'published', 'draft'];
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL
+});
 
 export default function MyPosts() {
   const { user } = useSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [posts, setPosts] = useState(mockPosts);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Filter posts based on search term and status
-  const filteredPosts = posts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === 'all' || post.status === selectedStatus;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    fetchMyPosts();
+  }, [selectedStatus]);
+
+  const fetchMyPosts = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+
+      const params = new URLSearchParams();
+      if (selectedStatus !== 'all') {
+        params.append('status', selectedStatus);
+      }
+
+      const response = await api.get(`/posts/me/posts?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      console.log('My posts:', response.data);
+      setPosts(response.data.data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+      setError(err.response?.data?.message || 'Failed to fetch posts');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeletePost = async (postId) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
-        // TODO: Implement actual delete API call
-        console.log('Deleting post:', postId);
-        setPosts(posts.filter(post => post.id !== postId));
+        const token = localStorage.getItem('token');
+        await api.delete(`/api/posts/${postId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        // Refresh posts after deletion
+        fetchMyPosts();
       } catch (error) {
         console.error('Failed to delete post:', error);
+        alert(error.response?.data?.message || 'Failed to delete post');
       }
     }
   };
+
+  // Filter posts based on search term
+  const filteredPosts = posts.filter(post =>
+    post.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -84,6 +111,12 @@ export default function MyPosts() {
             </Link>
           </div>
         </div>
+
+        {error && (
+          <div className="mt-4 bg-red-50 text-red-700 p-4 rounded-md">
+            {error}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="mt-8 sm:flex sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -131,7 +164,7 @@ export default function MyPosts() {
                   <thead>
                     <tr>
                       <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">
-                        Title
+                        Post Details
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                         Status
@@ -149,38 +182,37 @@ export default function MyPosts() {
                         Date
                       </th>
                       <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
-                        <span className="sr-only">Actions</span>
+                        <span className="">Actions</span>
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredPosts.map((post) => (
-                      <tr key={post.id}>
+                      <tr key={post._id}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
                           <div className="flex items-center">
                             <div>
                               <div className="font-medium text-gray-900">{post.title}</div>
-                              <div className="text-gray-500">{post.excerpt}</div>
+                              <div className="text-gray-500">{stripHtmlAndLimitWords(post.excerpt)}</div>
                             </div>
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
-                          <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                            post.status === 'published' 
+                          <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${post.status === 'published'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                            }`}>
                             {post.status}
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {post.views}
+                          {post.views || 0}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {post.comments}
+                          {post.comments?.length || 0}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {post.likes}
+                          {post.likes?.length || 0}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {new Date(post.createdAt).toLocaleDateString()}
@@ -188,19 +220,19 @@ export default function MyPosts() {
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                           <div className="flex justify-end gap-2">
                             <Link
-                              to={`/blog/${post.id}`}
+                              to={`/blog/${post._id}`}
                               className="text-gray-400 hover:text-gray-500"
                             >
                               <EyeIcon className="h-5 w-5" />
                             </Link>
                             <Link
-                              to={`/blog/edit/${post.id}`}
+                              to={`/blog/edit/${post._id}`}
                               className="text-indigo-400 hover:text-indigo-500"
                             >
                               <PencilIcon className="h-5 w-5" />
                             </Link>
                             <button
-                              onClick={() => handleDeletePost(post.id)}
+                              onClick={() => handleDeletePost(post._id)}
                               className="text-red-400 hover:text-red-500"
                             >
                               <TrashIcon className="h-5 w-5" />

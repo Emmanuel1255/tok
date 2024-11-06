@@ -1,60 +1,166 @@
-// src/pages/Dashboard.jsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import axios from 'axios';
 import { 
   PencilSquareIcon, 
   ChartBarIcon, 
   UserGroupIcon, 
   DocumentTextIcon,
-  PlusIcon
+  PlusIcon,
+  HeartIcon,
+  ChatBubbleLeftIcon,
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
+import { stripHtmlAndLimitWords } from '../utils/textHelpers';
 
-// Mock data - replace with actual data from your API
-const stats = [
-  { name: 'Total Posts', value: '12', icon: DocumentTextIcon },
-  { name: 'Total Views', value: '2.3k', icon: ChartBarIcon },
-  { name: 'Followers', value: '148', icon: UserGroupIcon },
-];
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}` || 'http://localhost:5000/api';
 
-const recentPosts = [
-  {
-    id: 1,
-    title: 'Getting Started with React and Tailwind',
-    excerpt: 'Learn how to set up a new project with React and Tailwind CSS...',
-    publishedAt: '2024-03-15',
-    status: 'published',
-    views: 234
-  },
-  {
-    id: 2,
-    title: 'Building a Blog Platform',
-    excerpt: 'Step by step guide to creating your own blogging platform...',
-    publishedAt: '2024-03-14',
-    status: 'draft',
-    views: 0
-  },
-  // Add more posts as needed
-];
+// Helper function to get activity icon based on type
+const ActivityIcon = ({ type }) => {
+  switch (type) {
+    case 'post_created':
+      return <PencilSquareIcon className="h-5 w-5 text-green-600" />;
+    case 'post_updated':
+      return <PencilIcon className="h-5 w-5 text-blue-600" />;
+    case 'post_deleted':
+      return <TrashIcon className="h-5 w-5 text-red-600" />;
+    case 'comment_added':
+    case 'comment_received':
+      return <ChatBubbleLeftIcon className="h-5 w-5 text-purple-600" />;
+    case 'like_given':
+    case 'like_received':
+      return <HeartIcon className="h-5 w-5 text-pink-600" />;
+    default:
+      return <DocumentTextIcon className="h-5 w-5 text-gray-600" />;
+  }
+};
 
-const recentActivity = [
-  {
-    id: 1,
-    type: 'comment',
-    content: 'New comment on "Getting Started with React and Tailwind"',
-    timestamp: '30 minutes ago'
-  },
-  {
-    id: 2,
-    type: 'like',
-    content: '5 new likes on your recent post',
-    timestamp: '2 hours ago'
-  },
-  // Add more activities as needed
-];
+// Helper function to format relative time
+const formatRelativeTime = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - date) / 1000);
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  const diffInDays = Math.floor(diffInHours / 24);
+
+  if (diffInSeconds < 60) return 'just now';
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+  if (diffInDays < 7) return `${diffInDays}d ago`;
+  return date.toLocaleDateString();
+};
 
 export default function Dashboard() {
-  const { user } = useSelector((state) => state.auth);
+  const { user, token } = useSelector(state => state.auth);
+  const [stats, setStats] = useState({
+    overview: {
+      totalPosts: 0,
+      totalViews: 0,
+      totalLikes: 0,
+      totalComments: 0,
+      engagementRate: '0'
+    },
+    postsByStatus: {
+      published: 0,
+      draft: 0
+    },
+    recentEngagement: {
+      last30Days: {
+        views: 0,
+        likes: 0,
+        comments: 0
+      }
+    }
+  });
+  const [recentPosts, setRecentPosts] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    }
+  };
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all data in parallel
+        const [statsRes, postsRes, activitiesRes] = await Promise.all([
+          axios.get(`${API_URL}/users/stats`, config),
+          axios.get(`${API_URL}/posts/me/posts?limit=5`, config),
+          axios.get(`${API_URL}/users/activities`, config)
+        ]);
+
+        setStats(statsRes.data.data);
+        setRecentPosts(postsRes.data.data);
+        setActivities(activitiesRes.data.data);
+        
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch dashboard data');
+        console.error('Dashboard data fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [token]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading dashboard</h3>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-500"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const statsConfig = [
+    { 
+      name: 'Total Posts', 
+      value: stats.overview.totalPosts,
+      subtext: `${stats.postsByStatus.published || 0} published`, 
+      icon: DocumentTextIcon 
+    },
+    { 
+      name: 'Total Views', 
+      value: stats.overview.totalViews >= 1000 
+        ? `${(stats.overview.totalViews / 1000).toFixed(1)}k` 
+        : stats.overview.totalViews,
+      subtext: `${stats.recentEngagement.last30Days.views} this month`, 
+      icon: ChartBarIcon 
+    },
+    {
+      name: 'Engagement Rate',
+      value: `${stats.overview.engagementRate}%`,
+      subtext: `${stats.overview.totalLikes + stats.overview.totalComments} interactions`,
+      icon: UserGroupIcon
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -63,7 +169,7 @@ export default function Dashboard() {
         <div className="md:flex md:items-center md:justify-between">
           <div className="min-w-0 flex-1">
             <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-              Welcome back, {user?.name || 'User'}
+              Welcome back, {user?.firstName || 'User'}
             </h2>
           </div>
           <div className="mt-4 flex md:ml-4 md:mt-0">
@@ -79,7 +185,7 @@ export default function Dashboard() {
 
         {/* Stats Section */}
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {stats.map((stat) => (
+          {statsConfig.map((stat) => (
             <div
               key={stat.name}
               className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6"
@@ -90,8 +196,11 @@ export default function Dashboard() {
                 </div>
                 <p className="ml-16 truncate text-sm font-medium text-gray-500">{stat.name}</p>
               </dt>
-              <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
+              <dd className="ml-16 flex flex-col gap-1">
                 <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                {stat.subtext && (
+                  <p className="text-sm text-gray-500">{stat.subtext}</p>
+                )}
               </dd>
             </div>
           ))}
@@ -110,31 +219,39 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="flow-root">
-              <ul className="-my-5 divide-y divide-gray-200">
-                {recentPosts.map((post) => (
-                  <li key={post.id} className="py-5">
-                    <div className="relative focus-within:ring-2 focus-within:ring-primary-500">
-                      <h3 className="text-sm font-semibold text-gray-800">
-                        <Link to={`/blog/${post.id}`} className="hover:underline focus:outline-none">
-                          {post.title}
-                        </Link>
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-600 line-clamp-2">{post.excerpt}</p>
-                      <div className="mt-2 flex items-center gap-x-4">
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                          post.status === 'published' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {post.status}
-                        </span>
-                        <span className="text-xs text-gray-500">{post.views} views</span>
-                        <span className="text-xs text-gray-500">{post.publishedAt}</span>
+              {recentPosts.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">No posts yet</p>
+              ) : (
+                <ul className="-my-5 divide-y divide-gray-200">
+                  {recentPosts.map((post) => (
+                    <li key={post._id} className="py-5">
+                      <div className="relative focus-within:ring-2 focus-within:ring-primary-500">
+                        <h3 className="text-sm font-semibold text-gray-800">
+                          <Link to={`/blog/${post._id}`} className="hover:underline focus:outline-none">
+                            {post.title}
+                          </Link>
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                          {stripHtmlAndLimitWords(post.excerpt)}
+                        </p>
+                        <div className="mt-2 flex items-center gap-x-4">
+                          <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                            post.status === 'published' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {post.status}
+                          </span>
+                          <span className="text-xs text-gray-500">{post.views} views</span>
+                          <span className="text-xs text-gray-500">
+                            {formatRelativeTime(post.createdAt)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 
@@ -150,33 +267,47 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="flow-root">
-              <ul className="-mb-8">
-                {recentActivity.map((activity, activityIdx) => (
-                  <li key={activity.id}>
-                    <div className="relative pb-8">
-                      {activityIdx !== recentActivity.length - 1 ? (
-                        <span
-                          className="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200"
-                          aria-hidden="true"
-                        />
-                      ) : null}
-                      <div className="relative flex items-start space-x-3">
-                        <div className="relative">
-                          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                            <PencilSquareIcon className="h-5 w-5 text-gray-600" />
+              {activities.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">No recent activity</p>
+              ) : (
+                <ul className="-mb-8">
+                  {activities.map((activity, index) => (
+                    <li key={activity.id}>
+                      <div className="relative pb-8">
+                        {index !== activities.length - 1 ? (
+                          <span
+                            className="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200"
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        <div className="relative flex items-start space-x-3">
+                          <div className="relative">
+                            <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                              <ActivityIcon type={activity.type} />
+                            </div>
                           </div>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div>
-                            <p className="text-sm text-gray-900">{activity.content}</p>
-                            <p className="mt-0.5 text-sm text-gray-500">{activity.timestamp}</p>
+                          <div className="min-w-0 flex-1">
+                            <div>
+                              <p className="text-sm text-gray-900">{activity.content}</p>
+                              <p className="mt-0.5 text-sm text-gray-500">
+                                {formatRelativeTime(activity.createdAt)}
+                              </p>
+                              {activity.post && (
+                                <Link
+                                  to={`/blog/${activity.post._id}`}
+                                  className="mt-2 text-sm text-primary-600 hover:text-primary-500"
+                                >
+                                  View post →
+                                </Link>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>
@@ -198,8 +329,6 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-500">Start writing a new blog post</p>
               </div>
             </Link>
-
-            {/* Add more quick actions as needed */}
           </div>
         </div>
       </div>

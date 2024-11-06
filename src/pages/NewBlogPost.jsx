@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { createPost } from '../features/posts/postsActions';
 
 const CATEGORIES = [
   'Technology',
@@ -30,7 +31,7 @@ const modules = {
     [{ 'header': [1, 2, 3, false] }],
     ['bold', 'italic', 'underline', 'strike'],
     ['blockquote', 'code-block'],
-    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
     [{ 'align': [] }],
     ['link', 'image'],
     [{ 'color': [] }, { 'background': [] }],
@@ -42,7 +43,7 @@ export default function NewBlogPost() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
-  
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
@@ -51,27 +52,46 @@ export default function NewBlogPost() {
   const [currentTag, setCurrentTag] = useState('');
   const [featuredImage, setFeaturedImage] = useState(null);
   const [previewImage, setPreviewImage] = useState('');
-  const [status, setStatus] = useState('draft'); // draft or published
+  const [status, setStatus] = useState('draft');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Check file size (1MB = 1024 * 1024 bytes)
+      if (file.size > 1024 * 1024) {
+        setError('Image size should be less than 1MB');
+        return;
+      }
+
+      // Check file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Only JPEG, PNG, and GIF images are allowed');
+        return;
+      }
+
       setFeaturedImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result);
       };
       reader.readAsDataURL(file);
+      setError(''); // Clear any existing errors
     }
   };
 
   const handleAddTag = (e) => {
     e.preventDefault();
     if (currentTag.trim() && !tags.includes(currentTag.trim())) {
+      if (tags.length >= 5) {
+        setError('Maximum 5 tags allowed');
+        return;
+      }
       setTags([...tags, currentTag.trim()]);
       setCurrentTag('');
+      setError('');
     }
   };
 
@@ -81,8 +101,20 @@ export default function NewBlogPost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) {
-      setError('Title and content are required');
+
+    // Client-side validation
+    if (!title.trim()) {
+      setError('Title is required');
+      return;
+    }
+
+    if (!content.trim()) {
+      setError('Content is required');
+      return;
+    }
+
+    if (!category) {
+      setError('Category is required');
       return;
     }
 
@@ -90,30 +122,55 @@ export default function NewBlogPost() {
       setIsSubmitting(true);
       setError('');
 
+      // Create category object
+      const categoryObject = {
+        name: category,
+        slug: category.toLowerCase().replace(/\s+/g, '-')
+      };
+
+      // Create post data object (not FormData yet)
       const postData = {
-        title,
-        content,
-        excerpt: excerpt || content.substring(0, 150) + '...',
-        category,
+        title: title.trim(),
+        content: content.trim(),
+        category: categoryObject,
         tags,
         status,
-        author: user.id,
+        excerpt: excerpt.trim(),
         featuredImage
       };
 
-      // TODO: Implement actual API call
-      console.log('Creating post:', postData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      navigate('/dashboard');
+      // Log the data being sent
+      console.log('Submitting post data:', postData);
+      // Add this right before the dispatch in handleSubmit
+      console.log('Final form data:', {
+        title: title.trim(),
+        content: content.trim(),
+        category: categoryObject,
+        tags,
+        status,
+        excerpt: excerpt.trim(),
+        featuredImage: featuredImage ? featuredImage.name : null
+      });
+
+      // Dispatch create post action
+      const result = await dispatch(createPost(postData)).unwrap();
+
+      if (result.success) {
+        navigate(`/blog/${result.data._id}`);
+      } else {
+        setError(result.message || 'Failed to create post');
+      }
     } catch (err) {
+      console.error('Submit error:', err);
       setError(err.message || 'Failed to create post');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Check if form is valid
+  const isFormValid = title.trim() && content.trim() && category;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -132,16 +189,46 @@ export default function NewBlogPost() {
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
                 className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+                disabled={isSubmitting}
               >
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
               </select>
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                disabled={isSubmitting || !isFormValid}
+                className={`inline-flex items-center rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm ${isFormValid && !isSubmitting
+                  ? 'bg-primary-600 hover:bg-primary-500'
+                  : 'bg-gray-400 cursor-not-allowed'
+                  }`}
               >
-                {isSubmitting ? 'Saving...' : 'Save'}
+                {isSubmitting ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Creating Post...
+                  </>
+                ) : (
+                  'Create Post'
+                )}
               </button>
             </div>
           </div>
@@ -163,7 +250,12 @@ export default function NewBlogPost() {
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Post title"
                   className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 text-3xl font-bold"
+                  disabled={isSubmitting}
+                  maxLength={200}
                 />
+                <p className="mt-2 text-sm text-gray-500">
+                  {/* {title.length}/200 characters */}
+                </p>
               </div>
 
               {/* Editor */}
@@ -171,10 +263,14 @@ export default function NewBlogPost() {
                 <ReactQuill
                   theme="snow"
                   value={content}
-                  onChange={setContent}
+                  onChange={(value) => {
+                    console.log('Content changed:', value);
+                    setContent(value);
+                  }}
                   formats={formats}
                   modules={modules}
                   className="min-h-[300px]"
+                  readOnly={isSubmitting}
                 />
               </div>
             </div>
@@ -198,6 +294,7 @@ export default function NewBlogPost() {
                           setFeaturedImage(null);
                           setPreviewImage('');
                         }}
+                        disabled={isSubmitting}
                         className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-sm hover:bg-gray-100"
                       >
                         <XMarkIcon className="h-5 w-5 text-gray-600" />
@@ -215,9 +312,14 @@ export default function NewBlogPost() {
                             accept="image/*"
                             onChange={handleImageChange}
                             className="sr-only"
+                            disabled={isSubmitting}
                           />
                         </label>
                       </div>
+                      <p className="text-xs text-gray-500">
+                        Maximum file size: 1MB<br />
+                        Supported formats: JPEG, PNG, GIF
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -230,6 +332,7 @@ export default function NewBlogPost() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  disabled={isSubmitting}
                 >
                   <option value="">Select a category</option>
                   {CATEGORIES.map((cat) => (
@@ -240,7 +343,9 @@ export default function NewBlogPost() {
 
               {/* Tags */}
               <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Tags</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Tags ({tags.length}/5)
+                </h3>
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
                     {tags.map((tag) => (
@@ -252,6 +357,7 @@ export default function NewBlogPost() {
                         <button
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
+                          disabled={isSubmitting}
                           className="ml-1 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-primary-400 hover:bg-primary-200 hover:text-primary-500 focus:bg-primary-500 focus:text-white focus:outline-none"
                         >
                           <XMarkIcon className="h-3 w-3" />
@@ -266,6 +372,7 @@ export default function NewBlogPost() {
                       onChange={(e) => setCurrentTag(e.target.value)}
                       placeholder="Add a tag"
                       className="block w-full rounded-l-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      disabled={isSubmitting || tags.length >= 5}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -276,6 +383,7 @@ export default function NewBlogPost() {
                     <button
                       type="button"
                       onClick={handleAddTag}
+                      disabled={isSubmitting || tags.length >= 5}
                       className="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 bg-gray-50 px-3 text-gray-500 hover:bg-gray-100"
                     >
                       Add
@@ -293,12 +401,89 @@ export default function NewBlogPost() {
                   rows={3}
                   placeholder="Write a brief excerpt (optional)"
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  disabled={isSubmitting}
+                  maxLength={500}
                 />
+                <p className="mt-2 text-sm text-gray-500">
+                  {/* {excerpt.length}/500 characters */}
+                </p>
               </div>
             </div>
           </div>
+
+          {/* Mobile Submit Button */}
+          <div className="lg:hidden">
+            <button
+              type="submit"
+              disabled={isSubmitting || !isFormValid}
+              className={`w-full inline-flex justify-center items-center rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm ${isFormValid && !isSubmitting
+                ? 'bg-primary-600 hover:bg-primary-500'
+                : 'bg-gray-400 cursor-not-allowed'
+                }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Creating Post...
+                </>
+              ) : (
+                'Create Post'
+              )}
+            </button>
+          </div>
+
+          {/* Form Requirements */}
+          <div className="text-sm text-gray-500 mt-8">
+            <h4 className="font-medium text-gray-700">Requirements:</h4>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li className={title.trim() ? 'text-green-600' : ''}>
+                Title is required
+              </li>
+              <li className={content.trim() ? 'text-green-600' : ''}>
+                Content is required
+              </li>
+              <li className={category ? 'text-green-600' : ''}>
+                Category is required
+              </li>
+              <li>Featured image is optional (max 1MB)</li>
+              <li>Maximum 5 tags allowed</li>
+              {/* <li>Excerpt is optional (max 500 characters)</li> */}
+            </ul>
+          </div>
+
+          {/* Confirmation Dialog */}
+          {isSubmitting && (
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
+              <div className="bg-white p-6 rounded-lg shadow-xl">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                <p className="mt-4 text-center text-gray-900 font-medium">
+                  Creating your post...
+                </p>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </div>
   );
 }
+
